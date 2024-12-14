@@ -1,0 +1,167 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+	xmlns:cc="http://creativecommons.org/ns#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:dct="http://purl.org/dc/terms/"
+	xmlns:foaf="http://xmlns.com/foaf/0.1/">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=9" />
+	
+	<style type="text/css" media="screen, projection">
+	<!--
+	@import url(../common/css/style.css);
+	-->
+pre.code {
+  white-space: pre-wrap;
+  border-width:1px; border-style:solid; border-color:black; padding: 1em;
+}
+pre.code::before {
+  counter-reset: listing;
+}
+pre.code code {
+  counter-increment: listing;
+}
+pre.code code::before {
+  content: counter(listing) ". ";
+  display: inline-block;
+  width: 8em;         /* now works */
+  padding-left: auto; /* now works */
+  margin-left: auto;  /* now works */
+  text-align: right;  /* now works */
+}
+	</style>
+
+	  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+	  <script id="MathJax-script" async
+	          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+	  </script>
+
+
+	<title>PA I/2</title>	
+</head>
+<body>
+	<div id="wrapper">
+		<div class="content">
+			<h1>Bodovaný domácí úkol č. 2</h1>
+			<h2>Zadání úlohy</h2>
+			<p>
+				Cílem domácího úkolu je implementace paralelního řešení shlukovacího algoritmu Affinity Propagation.
+			</p>
+			
+			<p>
+			<strong>Popis problému</strong>. Affinity Propagation (AP) je algoritmus pro shlukování, který patří do kategorie shlukovacích metod založených na reprezentantech. Na rozdíl od některých shlukovacích algoritmů, které vyžadují předem stanovený počet shluků, AP identifikuje středy shluků, nazývané reprezentanti, a přiřazuje data do takto definovaných shluků iterativně.
+			</p>			
+
+			<div >
+				Obrázek 1: příklad AP<br/>
+				<img src="AP.png" width="600"/>
+			</div>
+
+			<p>
+			Princip AP lze popsat v několika krocích:
+			<ol>
+				<li>AP vychází z matice podobnosti, \(S\), která reprezentuje podobnost mezi dvojicemi bodů, \(x_i, x_j\). Podobnost lze vypočítat jako zápornou hodnoty čtverce vzdálenosti, \( S(i,j) = - || x_i - x_j||^2\). Jinými slovy, pro d-dimenzionální body je výpočet: \( S(i,j) = - \sum_{k = 1}^d (x_{i}[k] - x_{j}[k])^2\).
+
+				Zvláštní roli mají hodnoty na diagonále \(S\). Ty nastavíme na medián hodnot podobností (zdůvodnění najdete např. <a href="https://www.geeksforgeeks.org/affinity-propagation-in-ml-to-find-the-number-of-clusters/">zde</a>).
+				 </li>
+				<li>
+				Vlastní AP využívá dvě matice: matici odpovědnosti \(R\) a matici dostupnosti \(A\).
+				<ul>
+				<li>
+				Odpovědnost (\(R\)): \(R(i, k)\) reprezentuje "odpovědnost" (vhodnost) bodu \(i\) být reprezentantem pro bod \(k\), vzhledem k ostatním potenciálním reprezentantům \(k\).
+				</li>
+				<li>
+				Dostupnost \((A\)): \(A(i, k)\) reprezentuje "dostupnost" bodu \(k\) vybrat bod \(i\) jako reprezentanta. Ukazuje, jak moc bod \(k\) upřednostňuje bod \(i\) jako reprezentanta.
+				</li>
+				</ul>
+				Obě matice jsou na začátku inicializovány samými nulami.
+				</li>
+
+				<li>Algoritmus iterativně aktualizuje matice odpovědnosti a dostupnosti na základě následujících pravidel:
+				<ul>
+					<li>
+    <div id="equation1">
+        \( R(i, k) = S(i, k) - \max_{k' \neq k}\{A(i, k') + S(i, k')\} \)
+    </div>		
+					</li>
+					<li>
+						    <div id="equation2">
+        \( A(i, k) = \min\{0, R(k, k)\} + \sum_{i' \neq i}\max\{0, R(i', k)\}\} \)
+    </div>
+    		    <div id="equation2">
+        \( A(k, k) = \sum_{i' \neq k}\max\{0, R(i', k)\}\} \)
+    </div>
+
+					</li>
+				</ul>
+				</li>
+
+				<li>Reprezentanti a přiřazení do shluků je určeno na základě hodnot v maticích odpovědnosti a dostupnosti. Body s vysokými hodnotami v obou maticích mají pravděpodobnost stát se reprezentanty. Uvažujme kriteriální matici, \(C = R + A\). V takové matici je reprezentantem každého řádku zvolen ten bod, v jehož sloupci je největší hodnota. 
+
+				<br/>
+				Například v této matici \(C = 
+				\begin{bmatrix} 
+					 5 & -16 & -15 & -11 & -21\\
+					 5 & -15 & -25 & -15 & -25\\
+					 5 & -26 & -15 & -17 & -25\\
+					-9 & -29 & -30 &  -5 & -10\\
+				 -14 & -34 & -33 &  -5 & -10\\
+				\end{bmatrix}\)<br/>
+				je bod \(x_1\) (první řádek) reprezentován sám sebou (\(x_1\)), protože nejvyšší hodnota na prvním řádku je v prvním sloupci. Bod \(x_2\) je také reprezentován \(x_1\) (nejvyšší hodnota na druhém řádku je opět v prvním sloupci), stejně jako \(x_3\). Podle stejné logiky je reprezentantem \(x_4\) bod \(x_4\) a reprezentantem \(x_5\) zase \(x_4\). V datech jsou tedy dva shluky, \(\{x_1, x_2, x_3\}\) a \(\{x_4, x_5\}\)
+			</li>
+			<li>
+				Body 3 - 4 opakujeme dokud se shluky nestabilizují nebo po předem určený počet iterací.
+			</li>
+			</ol>
+			</p>
+
+<p>
+ Na základě popisu Affinity Propagation můžeme zformulovat následující zadání druhého úkolu.
+</p>
+
+			<p>
+			<strong>Zadání</strong>. Implementujte paralelní řešení Affinity Propagation (na datasetu MNIST <a href="archive.zip"></a>). Popis datasetu najdete např. <a href="https://paperswithcode.com/dataset/mnist"> zde </a>(original) nebo <a href="https://www.kaggle.com/datasets/oddrationale/mnist-in-csv">zde</a> (jednodušší formát). Cílem úkolu není naučit se shlukovat MNIST podle skutečných tříd, ale testovat paralelní implementaci. Label třídy tedy pro potřeby shlukování můžeme ignorovat. Lze na něm ověřit, kolik algoritmus najde shluků a jak správně objekty přiřadí.
+			</p>
+			<p>
+			<strong>Doporučení</strong> Při řešení vycházejte z toho, co jsme si ukázali na cvičeních na příkladu K-Means. O problému se dá uvažovat jako o shlukování se a) automatickým určením počtu shluků a b) bez nutnosti opakovaně počítat vzdálenosti mezi body a centroidy. Jako v případě předchozí úlohy je problém  analogický, ale ne totožný.
+			</p>
+
+			<h2>Max. bodové hodnocení</h2>			
+			<p>
+			33
+			</p>
+
+			<h2>Termín odevzdání</h2>			
+			<p>
+				Domácí úkol bude odevzdán dva týdny po zveřejnění zadání.
+			</p>
+			
+			<h2>Reference</h2>
+			<p>
+			<ol>
+			  <li>Brendan J. Frey; Delbert Dueck (2007). "Clustering by passing messages between data points". Science. 315 (5814): 972–976. Bibcode:2007Sci...315..972F. CiteSeerX 10.1.1.121.3145. doi:10.1126/science.1136800. PMID 17218491. S2CID 6502291</li>
+			  <li>
+			  	Thavikulwat, Precha. “Affinity Propagation: A Clustering Algorithm for Computer-Assisted Business Simulations and Experiential Exercises.” Developments in Business Simulation and Experiential Learning 35 (2014): n. pag.
+			  </li>
+<li>https://www.geeksforgeeks.org/affinity-propagation-in-ml-to-find-the-number-of-clusters/</li>
+			</ol>
+			</p>
+			<br />
+			<br />
+			<br />
+			<br />
+			<br />
+		</div>
+	</div>
+	<div>
+		<div class="footer_textitem">			
+		</div>
+	</div>
+
+</body>
+</html>
