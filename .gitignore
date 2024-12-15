@@ -1,2 +1,5 @@
 *.csv
 *.txt
+
+!requirements.txt
+!U1/Y-10_t.txt
